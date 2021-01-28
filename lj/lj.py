@@ -521,6 +521,26 @@ class LJServer:
             raise LJException(v)
         return response
 
+    # [ https://github.com/helpacat/LJ-Filter-Comments/blob/master/filter.php ]
+    def getcomments(self, journal, ditemid, page=1, expang_strategy=None ):
+        """
+            use expang_strategy = 'mobile_thread' to narrow results
+        """
+
+        arguments = self.__headers()
+        arguments['journal'] = journal
+        arguments['ditemid'] = ditemid
+        arguments['page']    = page
+
+        if expang_strategy:
+            arguments['expang_strategy'] = expang_strategy
+        try:
+            response = self.__request('getcomments', arguments)
+        except xmlrpclib.Error as v:
+            raise LJException(v)
+        return response
+
+
     def __request_with_cookie(self, url, session=None):
         if not session:
             session = self.sessiongenerate()
