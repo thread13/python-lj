@@ -637,6 +637,55 @@ class LJServer:
         d.unlink()
         return data
 
+# -----------------------------------------------------------------
+def walk_comments(comments, visitor, *args, **kwargs):
+    """
+        performs a tree-walk through a result of LJServer::getcomments()
+        and applies a visitor(children, comment, raw_comment, *args, **kwargs) function 
+        to each tree node, where:
+         - children is a list of descendant nodes -- filter it to limit the walk
+         - raw_comment is a raw dictionary tree node
+         - comment is an object with __dict__ updated from raw_comment
+           and body converted to text
+         - args and kwargs are coming from walk_comments() arguments
+
+        a simple visitor function example (Py2) :
+
+          def visitor(children, comment, raw_comment):
+              print "%s(%s): %s (%s) [%s]" % ( ' ' * comment.level
+                                             , comment.level
+                                             , raw_comment.get('identity_display', comment.postername)
+                                             , comment.postername, len(children)
+                                             )
+
+    """
+
+    c_list = comments.get('comments', [])
+    _walk_comments( c_list, visitor, *args, **kwargs )
+
+
+class Struct:
+    pass
+
+def _walk_comments( c_list, visitor, *args, **kwargs ):
+
+    for c in c_list:
+
+        comment = Struct()
+        comment.__dict__.update(c)
+        # a url for pics -- '<img src="https://ic.pics.livejournal.com/silver_popov/43390386/16527/16527_900.jpg" alt="" title="">'
+        # or an xmlrpclib.Binary instance
+        if not isinstance( comment.body, basestring ):
+            comment.body = comment.body.data
+
+        children = c.get('children', [])
+        visitor(children, comment, c, *args, **kwargs)
+
+        _walk_comments( children, visitor, *args, **kwargs )
+
+
+
+# -----------------------------------------------------------------
 
 # Stole this function wholesale from the python.org minidom example.
 # The necessity of this function helps explain why I hate the DOM.
@@ -654,6 +703,8 @@ def get_text_from_single(dom, tag):
         return get_text(l[0].childNodes)
     else:
         return ''
+
+# -----------------------------------------------------------------
 
 if __name__ == "__main__":
     LJ = LJServer('lj.py; kemayo@gmail.com', 'Python-PyLJ/0.0.1')
